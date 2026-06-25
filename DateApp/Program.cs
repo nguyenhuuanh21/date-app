@@ -1,5 +1,6 @@
 using DateApp.Data;
 using DateApp.Interfaces;
+using DateApp.Middlewares;
 using DateApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +46,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
-
+app.UseMiddleware<ExceptionMiddlewares>();
 app.UseCors(options =>
 {
     options.AllowAnyHeader()
