@@ -19,7 +19,7 @@ namespace DateApp.Controllers
             {
                 return BadRequest("Email is already exist");
             }
-            using var hmac=new HMACSHA3_512();
+            using var hmac=new HMACSHA512();
             var user=new AppUser
             {
                 Email= registerDto.Email,
@@ -43,7 +43,7 @@ namespace DateApp.Controllers
             {
                 return Unauthorized("Invalid email");
             }
-            using var hmac=new HMACSHA3_512(user.PasswordSalt);
+            using var hmac=new HMACSHA512(user.PasswordSalt);
             var computedHash=hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(loginDto.Password));
 
             for (var i = 0; i < computedHash.Length; i++)

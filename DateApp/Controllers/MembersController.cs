@@ -1,5 +1,6 @@
 ﻿using DateApp.Data;
 using DateApp.Entities;
+using DateApp.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,23 +8,28 @@ using Microsoft.EntityFrameworkCore;
 namespace DateApp.Controllers
 {
     [Authorize]
-    public class MembersController(AppDbContext context) : BaseApiController
+    public class MembersController(IMemberRepository memberRepository) : BaseApiController
     {
         [HttpGet]
-        public async Task<ActionResult<List<AppUser>>> GetMembers()
+        public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers()
         {
-            var members= await context.AppUsers.ToListAsync();
-            return Ok(members);
+            
+            return Ok(await memberRepository.GetMembersAsync());
         }
         [HttpGet("{id}")]
-        public async Task<ActionResult<AppUser>> GetMember([FromRoute]string id)
+        public async Task<ActionResult<Member>> GetMember([FromRoute]string id)
         {
-            var member =await context.AppUsers.FindAsync(id);
+            var member =await memberRepository.GetMemberByIdAsync(id);
             if (member == null)
             {
                 return NotFound();
             }
             return Ok(member);
+        }
+        [HttpGet("{id}/photos")]
+        public async Task<ActionResult<IReadOnlyList<Photo>>> GetMemberPhotos([FromRoute] string id)
+        {
+            return Ok(await memberRepository.GetPhotosForMemberAsync(id));
         }
     }
 }
