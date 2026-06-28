@@ -32,5 +32,9 @@ namespace DateApp.Data
         {
             context.Entry(member).State = EntityState.Modified;
         }
+        public async Task<Member?> GetMemberForUpdate(string id)
+        {
+            return await context.Members.Include(x=>x.AppUser).SingleOrDefaultAsync(x=>x.Id == id);
+        }
     }
 }

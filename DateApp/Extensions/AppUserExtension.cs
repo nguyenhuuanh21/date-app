@@ -13,6 +13,7 @@ namespace DateApp.Extensions
                 Email = user.Email,
                 DisplayName = user.DisplayName,
                 Id = user.Id,
+                ImageUrl=user.ImageUrl,
                 Token = tokenService.CreateToken(user)
             };
         }

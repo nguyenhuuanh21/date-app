@@ -1,9 +1,12 @@
 ﻿using DateApp.Data;
+using DateApp.DTOs;
 using DateApp.Entities;
+using DateApp.Extensions;
 using DateApp.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace DateApp.Controllers
 {
@@ -30,6 +33,28 @@ namespace DateApp.Controllers
         public async Task<ActionResult<IReadOnlyList<Photo>>> GetMemberPhotos([FromRoute] string id)
         {
             return Ok(await memberRepository.GetPhotosForMemberAsync(id));
+        }
+        [HttpPut]
+        public async Task<ActionResult> UpdateMember(MemberUpdateDto memberUpdateDto)
+        {
+            var memberId=User.GetUserId();
+            var member = await memberRepository.GetMemberForUpdate(memberId);
+
+            if (member == null)
+            {
+                return NotFound("cannot found member");
+            }
+            member.DisplayName=memberUpdateDto.DisplayName ?? member.DisplayName;
+            member.Description=memberUpdateDto.Description ?? member.Description;
+            member.City=memberUpdateDto.City ?? member.City;
+            member.Country=memberUpdateDto.Country ?? member.Country;
+            member.AppUser.DisplayName=memberUpdateDto.DisplayName ?? member.AppUser.DisplayName;
+            memberRepository.Update(member);
+            if(await memberRepository.SaveAllAsync())
+            {
+                return NoContent();
+            }
+            return BadRequest("Failed to update member !!!");
         }
     }
 }
