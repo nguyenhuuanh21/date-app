@@ -20,12 +20,20 @@ namespace DateApp.Controllers
                 return BadRequest("Email is already exist");
             }
             using var hmac=new HMACSHA512();
-            var user=new AppUser
+            var user = new AppUser
             {
-                Email= registerDto.Email,
-                DisplayName= registerDto.DisplayName,
-                PasswordHash=hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(registerDto.Password)),
-                PasswordSalt=hmac.Key
+                Email = registerDto.Email,
+                DisplayName = registerDto.DisplayName,
+                PasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(registerDto.Password)),
+                PasswordSalt = hmac.Key,
+                Member = new Member
+                {
+                    DateOfBirth = registerDto.DateOfBirth,
+                    DisplayName = registerDto.DisplayName,
+                    Gender = registerDto.Gender,
+                    City = registerDto.City,    
+                    Country= registerDto.Country,
+                }
             };
             context.Add(user);
             await context.SaveChangesAsync();
