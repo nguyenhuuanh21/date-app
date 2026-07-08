@@ -2,6 +2,7 @@
 using DateApp.DTOs;
 using DateApp.Entities;
 using DateApp.Extensions;
+using DateApp.Helpers;
 using DateApp.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,10 @@ namespace DateApp.Controllers
     public class MembersController(IMemberRepository memberRepository,IPhotoService photoService) : BaseApiController
     {
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers()
+        public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers([FromQuery] MemberParams memberParams)
         {
-            
-            return Ok(await memberRepository.GetMembersAsync());
+            memberParams.CurrentMemberId=User.GetUserId();
+            return Ok(await memberRepository.GetMembersAsync(memberParams));
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<Member>> GetMember([FromRoute]string id)
