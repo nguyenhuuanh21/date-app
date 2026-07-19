@@ -1,13 +1,14 @@
 ﻿using DateApp.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 //dotnet ef migrations add "name"
 //dotnet ef database update
 namespace DateApp.Data
 {
-    public class AppDbContext(DbContextOptions options) : DbContext(options)
+    public class AppDbContext(DbContextOptions options) : IdentityDbContext<AppUser>(options)
     {
-        public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Member> Members { get; set; }
         public DbSet<Photo> Photos { get; set; }
         public DbSet<MemberLike> MemberLikes { get; set; }
@@ -16,6 +17,14 @@ namespace DateApp.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<IdentityRole>()
+                .HasData(
+                new IdentityRole { Id = "member-id", Name = "Member", NormalizedName = "MEMBER" },
+                new IdentityRole { Id = "moderator-id", Name = "Moderator", NormalizedName = "MODERATOR" },
+                new IdentityRole { Id = "admin-id", Name = "Admin", NormalizedName = "ADMIN" }
+                );
+
             modelBuilder.Entity<Message>()
                 .ToTable("Messages")
                 .HasOne(x => x.Sender)

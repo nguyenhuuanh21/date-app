@@ -31,7 +31,7 @@ namespace DateApp.Entities
         public List<Message> MessagesReceived { get; set; } = [];
         [JsonIgnore]
         [ForeignKey(nameof(Id))]
-        public AppUser AppUser { get; set; } = null!;
+        public AppUser   AppUser { get; set; } = null!;
 
     }
 }

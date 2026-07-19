@@ -1,12 +1,13 @@
 ﻿using DateApp.DTOs;
 using DateApp.Entities;
 using DateApp.Interfaces;
+using System.Threading.Tasks;
 
 namespace DateApp.Extensions
 {
     public static class AppUserExtension
     {
-        public static UserDto ToDto(this AppUser user,ITokenService tokenService)
+        public static async Task<UserDto> ToDto(this AppUser user,ITokenService tokenService)
         {
             return new UserDto
             {
@@ -14,7 +15,7 @@ namespace DateApp.Extensions
                 DisplayName = user.DisplayName,
                 Id = user.Id,
                 ImageUrl=user.ImageUrl,
-                Token = tokenService.CreateToken(user)
+                Token = await tokenService.CreateToken(user)
             };
         }
     }

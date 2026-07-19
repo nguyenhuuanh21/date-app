@@ -1,9 +1,11 @@
 using DateApp.Data;
+using DateApp.Entities;
 using DateApp.Helpers;
 using DateApp.Interfaces;
 using DateApp.Middlewares;
 using DateApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -25,6 +27,15 @@ builder.Services.AddScoped<ILikesRepository, LikesRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<LogUserActivity>();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
+builder.Services.AddIdentityCore<AppUser>(options =>
+{
+    options.Password.RequireNonAlphanumeric = false;
+    options.User.RequireUniqueEmail = true;
+}).AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<AppDbContext>()
+;
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -39,6 +50,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"))
+    .AddPolicy("RequireModeratorRole", policy => policy.RequireRole("Moderator"));
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -58,6 +73,7 @@ app.UseCors(options =>
 {
     options.AllowAnyHeader()
            .AllowAnyMethod()
+           .AllowCredentials()
            .WithOrigins("http://localhost:4200", "https://localhost:4200");
 });
 
@@ -72,8 +88,9 @@ var services = scope.ServiceProvider;
 try
 {
     var context = services.GetRequiredService<AppDbContext>();
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
     await context.Database.MigrateAsync();
-    await Seed.SeedUsers(context);
+    await Seed.SeedUsers(userManager);
 }catch(Exception ex)
 {
     var logger = services.GetRequiredService<ILogger<Program>>();
