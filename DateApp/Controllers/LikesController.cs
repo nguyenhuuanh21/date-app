@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DateApp.Controllers
 {
-    public class LikesController(ILikesRepository likesRepository) : BaseApiController
+    public class LikesController(IUnitOfWork unitOfWork) : BaseApiController
     {
         [HttpPost("{targetMemberId}")]
         public async Task<ActionResult>ToggleLike([FromRoute] string targetMemberId)
@@ -16,7 +16,7 @@ namespace DateApp.Controllers
             var sourceMemberId=User.GetUserId();
             if(sourceMemberId==targetMemberId)
                 return BadRequest("You cannot like yourself.");
-            var existingLike=await likesRepository.GetMemberLike(sourceMemberId, targetMemberId);
+            var existingLike=await unitOfWork.LikeRepository.GetMemberLike(sourceMemberId, targetMemberId);
             if (existingLike==null)
             {
                 var like = new MemberLike
@@ -24,13 +24,13 @@ namespace DateApp.Controllers
                     SourceMemberId = sourceMemberId,
                     TargetMemberId = targetMemberId 
                 };
-                likesRepository.AddLike(like);
+                unitOfWork.LikeRepository.AddLike(like);
             }
             else
             {
-                likesRepository.DeleteLike(existingLike);
+                unitOfWork.LikeRepository.DeleteLike(existingLike);
             }
-            if(await likesRepository.SaveAllAsync())
+            if(await unitOfWork.Complete())
                 return Ok();
             return BadRequest("Failed to update like.");
         }
@@ -38,14 +38,14 @@ namespace DateApp.Controllers
         public async Task<ActionResult<IReadOnlyList<string>>> GetCurrentMemberLikeIds()
         {
             var memberId=User.GetUserId();
-            return Ok(await likesRepository.GetCurrentMemberLikeIds(memberId));
+            return Ok(await unitOfWork.LikeRepository.GetCurrentMemberLikeIds(memberId));
         }
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<Member>>> GetMemberLikes([FromQuery] LikeParams likeParams)
         {
             var memberId = User.GetUserId();
             likeParams.MemberId = memberId;
-            return Ok(await likesRepository.GetMemberLikes(likeParams));
+            return Ok(await unitOfWork.LikeRepository.GetMemberLikes(likeParams));
 
         }
 

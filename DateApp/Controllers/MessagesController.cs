@@ -11,13 +11,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace DateApp.Controllers
 {
     [Authorize]
-    public class MessagesController(IMessageRepository messageRepository,IMemberRepository memberRepository) : BaseApiController
+    public class MessagesController(IUnitOfWork unitOfWork) : BaseApiController
     {
         [HttpPost]
         public async Task<ActionResult<MessageDto>>CreateMessage(CreateMessageDto createMessageDto)
         {
-            var sender=await memberRepository.GetMemberByIdAsync(User.GetUserId());
-            var recipient=await memberRepository.GetMemberByIdAsync(createMessageDto.RecipientId);
+            var sender=await unitOfWork.MemberRepository.GetMemberByIdAsync(User.GetUserId());
+            var recipient=await unitOfWork.MemberRepository.GetMemberByIdAsync(createMessageDto.RecipientId);
             if(sender==null || recipient == null||sender.Id== createMessageDto.RecipientId)
             {
                 return BadRequest("cannot send this message !");
@@ -28,8 +28,8 @@ namespace DateApp.Controllers
                 RecipientId=recipient.Id,
                 Content=createMessageDto.Content
             };
-            messageRepository.AddMessage(message);
-            if(await messageRepository.SaveAllAsync())
+            unitOfWork.MessageRepository.AddMessage(message);
+            if(await unitOfWork.Complete())
             {
                 return Ok(message.ToDto());
             }
@@ -41,19 +41,19 @@ namespace DateApp.Controllers
         {
             messageParams.MemberId=User.GetUserId();
 
-            return await messageRepository.GetMessagesForMember(messageParams);
+            return await unitOfWork.MessageRepository.GetMessagesForMember(messageParams);
         }
         [HttpGet("thread/{recipientId}")]
         public async Task<ActionResult<IReadOnlyList<MessageDto>>>GetMessageThread(string recipientId)
         {
             var currentUserId=User.GetUserId();
-            return Ok(await messageRepository.GetMessagesThread(currentUserId,recipientId));
+            return Ok(await unitOfWork.MessageRepository.GetMessagesThread(currentUserId,recipientId));
         }
         [HttpDelete]
         public async Task<ActionResult> DeleteMessage(string id)
         {
             var currentUserId = User.GetUserId();
-            var message = await messageRepository.GetMessage(id);
+            var message = await unitOfWork.MessageRepository.GetMessage(id);
             if (message == null) return NotFound("message not found");
             if(message.SenderId != currentUserId && message.RecipientId != currentUserId)
             {
@@ -69,9 +69,9 @@ namespace DateApp.Controllers
             }
             if (message.SenderDeleted && message.RecipientDeleted)
             {
-                messageRepository.DeleteMessage(message);
+                unitOfWork.MessageRepository.DeleteMessage(message);
             }
-            if(await messageRepository.SaveAllAsync())
+            if(await unitOfWork.Complete())
             {
                 return Ok();
             }

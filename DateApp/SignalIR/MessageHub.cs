@@ -6,8 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DateApp.SignalIR
 {
-    public class MessageHub(IMessageRepository messageRepository,
-        IMemberRepository memberRepository,
+    public class MessageHub(IUnitOfWork unitOfWork,
         IHubContext<PresenceHub> hubContext  ):Hub
     {
         public override async Task OnConnectedAsync()
@@ -18,18 +17,18 @@ namespace DateApp.SignalIR
             var groupName = GetGroupName(Context.User?.GetUserId() ?? "", otherUser);
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             await AddToGroup(groupName);
-            var messages = await messageRepository.GetMessagesThread(Context.User?.GetUserId() ?? "", otherUser);
+            var messages = await unitOfWork.MessageRepository.GetMessagesThread(Context.User?.GetUserId() ?? "", otherUser);
             await Clients.Group(groupName).SendAsync("ReceiveMessageThread", messages);
         }
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            await messageRepository.RemoveConnection(Context.ConnectionId);
+            await unitOfWork.MessageRepository.RemoveConnection(Context.ConnectionId);
             await base.OnDisconnectedAsync(exception);
         }
         public async Task SendMessage(CreateMessageDto createMessageDto)
         {
-            var sender = await memberRepository.GetMemberByIdAsync(Context.User.GetUserId());
-            var recipient=await memberRepository.GetMemberByIdAsync(createMessageDto.RecipientId);
+            var sender = await unitOfWork.MemberRepository.GetMemberByIdAsync(Context.User.GetUserId());
+            var recipient=await unitOfWork.MemberRepository.GetMemberByIdAsync(createMessageDto.RecipientId);
             if(recipient==null|| sender==null||sender== recipient) throw new HubException("cannot send message");
             var message = new Message
             {
@@ -40,13 +39,13 @@ namespace DateApp.SignalIR
                 Content=createMessageDto.Content
             };
             var groupName = GetGroupName(sender.Id, recipient.Id);
-            var group = await messageRepository.GetMessageGroup(groupName);
+            var group = await unitOfWork.MessageRepository.GetMessageGroup(groupName);
             if (group != null&&group.Connections.Any(x=>x.UserId==recipient.Id))
             {
                 message.DateRead = DateTime.UtcNow;
             }
-            messageRepository.AddMessage(message);
-            if(await messageRepository.SaveAllAsync())
+            unitOfWork.MessageRepository.AddMessage(message);
+            if(await unitOfWork.Complete())
             {
                 await Clients.Group(groupName).SendAsync("NewMessage", message.ToDto());
                 var connections = await PrecenseTracker.GetConnectionsForUser(recipient.Id);
@@ -60,15 +59,15 @@ namespace DateApp.SignalIR
         }
         private async Task<bool> AddToGroup(string groupName)
         {
-            var group = await messageRepository.GetMessageGroup(groupName);
+            var group = await unitOfWork.MessageRepository.GetMessageGroup(groupName);
             var connection = new Connection(Context.ConnectionId, Context.User.GetUserId());
             if (group == null)
             {
                 group = new Group(groupName) { Name = groupName };
-                messageRepository.addGroup(group);
+                unitOfWork.MessageRepository.addGroup(group);
             }
             group.Connections.Add(connection);
-            return await messageRepository.SaveAllAsync();
+            return await unitOfWork.Complete();
         }
         private static string GetGroupName(string? caller, string? other)
         {

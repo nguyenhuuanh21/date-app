@@ -12,18 +12,18 @@ using System.Security.Claims;
 namespace DateApp.Controllers
 {
     [Authorize]
-    public class MembersController(IMemberRepository memberRepository,IPhotoService photoService) : BaseApiController
+    public class MembersController(IUnitOfWork unitOfWork,IPhotoService photoService) : BaseApiController
     {
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers([FromQuery] MemberParams memberParams)
         {
             memberParams.CurrentMemberId=User.GetUserId();
-            return Ok(await memberRepository.GetMembersAsync(memberParams));
+            return Ok(await unitOfWork.MemberRepository.GetMembersAsync(memberParams));
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<Member>> GetMember([FromRoute]string id)
         {
-            var member =await memberRepository.GetMemberByIdAsync(id);
+            var member =await unitOfWork.MemberRepository.GetMemberByIdAsync(id);
             if (member == null)
             {
                 return NotFound();
@@ -33,13 +33,13 @@ namespace DateApp.Controllers
         [HttpGet("{id}/photos")]
         public async Task<ActionResult<IReadOnlyList<Photo>>> GetMemberPhotos([FromRoute] string id)
         {
-            return Ok(await memberRepository.GetPhotosForMemberAsync(id));
+            return Ok(await unitOfWork.MemberRepository.GetPhotosForMemberAsync(id));
         }
         [HttpPut]
         public async Task<ActionResult> UpdateMember(MemberUpdateDto memberUpdateDto)
         {
             var memberId=User.GetUserId();
-            var member = await memberRepository.GetMemberForUpdate(memberId);
+            var member = await unitOfWork.MemberRepository.GetMemberForUpdate(memberId);
 
             if (member == null)
             {
@@ -50,8 +50,8 @@ namespace DateApp.Controllers
             member.City=memberUpdateDto.City ?? member.City;
             member.Country=memberUpdateDto.Country ?? member.Country;
             member.AppUser.DisplayName=memberUpdateDto.DisplayName ?? member.AppUser.DisplayName;
-            memberRepository.Update(member);
-            if(await memberRepository.SaveAllAsync())
+            unitOfWork.MemberRepository.Update(member);
+            if(await unitOfWork.Complete())
             {
                 return NoContent();
             }
@@ -60,7 +60,7 @@ namespace DateApp.Controllers
         [HttpPost("add-photo")]
         public async Task<ActionResult<Photo>> AddPhoto([FromForm]  IFormFile file)
         {
-            var member = await memberRepository.GetMemberForUpdate(User.GetUserId());
+            var member = await unitOfWork.MemberRepository.GetMemberForUpdate(User.GetUserId());
             if (member == null)
             {
                 return NotFound("cannot found member");
@@ -84,7 +84,7 @@ namespace DateApp.Controllers
             }
             member.Photos.Add(photo);
 
-            if(await memberRepository.SaveAllAsync())
+            if(await unitOfWork.Complete())
             {
                 return photo;
             }
@@ -94,7 +94,7 @@ namespace DateApp.Controllers
         [HttpPut("set-main-photo/{photoId:int}")]
         public async Task<ActionResult> setMainPhoto([FromRoute] int photoId)
         {
-            var member = await memberRepository.GetMemberForUpdate(User.GetUserId());
+            var member = await unitOfWork.MemberRepository.GetMemberForUpdate(User.GetUserId());
             if(member == null)
             {
                 return NotFound("cannot found member");
@@ -106,7 +106,7 @@ namespace DateApp.Controllers
             }
             member.ImageUrl=photo.Url;
             member.AppUser.ImageUrl=photo.Url;
-            if(await memberRepository.SaveAllAsync())
+            if(await unitOfWork.Complete())
             {
                 return NoContent();
             }
@@ -115,7 +115,7 @@ namespace DateApp.Controllers
         [HttpDelete("delete-photo/{photoId:int}")]
         public async Task<ActionResult> deletePhoto([FromRoute] int photoId)
         {
-            var member = await memberRepository.GetMemberForUpdate(User.GetUserId());
+            var member = await unitOfWork.MemberRepository.GetMemberForUpdate(User.GetUserId());
             if (member == null)
             {
                 return NotFound("cannot found member");
@@ -134,7 +134,7 @@ namespace DateApp.Controllers
                 }
             }
             member.Photos.Remove(photo);
-            if(await memberRepository.SaveAllAsync())
+            if(await unitOfWork.Complete())
             {
                 return Ok();
             }
