@@ -12,5 +12,11 @@ namespace DateApp.Interfaces
         Task<PaginateResult<MessageDto>> GetMessagesForMember(MessageParams messageParams);
         Task<IEnumerable<MessageDto>>GetMessagesThread(string currentUserId, string recipientId);
         Task<bool> SaveAllAsync();
+        void addGroup(Group group);
+        Task RemoveConnection(string connectionId);
+        Task<Connection?> GetConnection(string connectionId);
+
+        Task<Group?> GetMessageGroup(string groupName);
+        Task<Group?> GetGroupForConnection(string connectionId);
     }
 }

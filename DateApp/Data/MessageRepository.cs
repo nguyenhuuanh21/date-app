@@ -57,5 +57,45 @@ namespace DateApp.Data
         {
             dbContext.Messages.Remove(message);
         }
+
+       
+
+        Task<bool> IMessageRepository.SaveAllAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void addGroup(Group group)
+        {
+            dbContext.Groups.Add(group);
+        }
+
+        public async Task RemoveConnection(string connectionId)
+        {
+            await dbContext.Connections
+                .Where(x=>x.ConnectionId==connectionId)
+                .ExecuteDeleteAsync();
+        }
+
+        public async Task<Connection?>GetConnection(string connectionId)
+        {
+            return await dbContext.Connections.FindAsync(connectionId);
+        }
+
+        public Task<Group?> GetMessageGroup(string groupName)
+        {
+            return dbContext.Groups
+                .Include(x=>x.Connections)
+                .FirstOrDefaultAsync(x=>x.Name==groupName);
+        }
+
+        public Task<Group?> GetGroupForConnection(string connectionId)
+        {
+            return dbContext.Groups
+                .Include(x=>x.Connections)
+                .Where(x=>x.Connections.Any(c=>c.ConnectionId==connectionId))
+                .FirstOrDefaultAsync();
+
+        }
     }
 }

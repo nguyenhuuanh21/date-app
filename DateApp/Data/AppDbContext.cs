@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 //dotnet ef migrations add "name"
+//dotnet ef migrations remove
 //dotnet ef database update
 namespace DateApp.Data
 {
@@ -13,6 +14,8 @@ namespace DateApp.Data
         public DbSet<Photo> Photos { get; set; }
         public DbSet<MemberLike> MemberLikes { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Group> Groups { get; set; }
+        public DbSet<Connection> Connections { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
